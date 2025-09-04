@@ -87,8 +87,8 @@ class EuromillionsTrainer:
         model_meta = {
             "trained_at": trained_at,
             "game": game,
-            "data_from": meta["data_from"],
-            "data_to": meta["data_to"],
+            "data_from": str(meta["data_from"]) if meta["data_from"] is not None else None,
+            "data_to": str(meta["data_to"]) if meta["data_to"] is not None else None,
             "n_draws": meta["n_draws"],
             "n_samples": meta["n_samples"],
             "window_size": meta["window_size"],
