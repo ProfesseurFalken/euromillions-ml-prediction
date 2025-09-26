@@ -1,9 +1,74 @@
-Param([string]$Py="python",[string]$Req="requirements.txt")
-Write-Host ">>> Checking Python..."
-$ver = & $Py -V 2>$null; if ($LASTEXITCODE -ne 0) { Write-Error "Python not found (install 3.11)."; exit 1 }
-Write-Host ">>> Creating venv..."; & $Py -m venv .venv
-Write-Host ">>> Activating + upgrading pip..."; . .\.venv\Scripts\Activate.ps1; & $Py -m pip install --upgrade pip
-Write-Host ">>> Installing requirements..."; if (-Not (Test-Path $Req)) { Write-Error "requirements.txt missing"; exit 1 }; pip install -r $Req
-Write-Host ">>> Ensuring .env and folders..."; if (-Not (Test-Path ".env") -and (Test-Path ".env.example")) { Copy-Item ".env.example" ".env" }
-New-Item -ItemType Directory -Force -Path "data","data\raw","data\processed","models\euromillions" | Out-Null
-Write-Host ">>> Bootstrap done. Launching UI..."; streamlit run ui\streamlit_app.py
+Param(
+    [string]$Py = "python",
+    [string]$Req = "requirements.txt"
+)
+
+$ErrorActionPreference = "Stop"
+
+function Invoke-Step {
+    param(
+        [string]$Message,
+        [scriptblock]$Action
+    )
+
+    Write-Host ">>> $Message"
+    & $Action
+}
+
+try {
+    Invoke-Step "Checking Python..." {
+        & $Py -V > $null
+    }
+
+    $venvRoot = Join-Path (Get-Location).Path ".venv"
+    $venvPython = Join-Path $venvRoot "Scripts\python.exe"
+
+    if (-not (Test-Path $venvPython)) {
+        Invoke-Step "Creating virtual environment..." {
+            & $Py -m venv ".venv"
+        }
+    }
+    else {
+        Write-Host ">>> Using existing virtual environment"
+    }
+
+    if (-not (Test-Path $venvPython)) {
+        throw "Virtual environment not found at $venvPython"
+    }
+
+    Invoke-Step "Upgrading pip..." {
+        & $venvPython -m pip install --upgrade pip
+    }
+
+    Invoke-Step "Installing requirements..." {
+        if (-not (Test-Path $Req)) {
+            throw "Requirements file not found: $Req"
+        }
+        & $venvPython -m pip install -r $Req
+    }
+
+    Invoke-Step "Ensuring .env and folders..." {
+        if (-not (Test-Path ".env") -and (Test-Path ".env.example")) {
+            Copy-Item ".env.example" ".env"
+        }
+
+        $paths = @(
+            "data",
+            "data\raw",
+            "data\processed",
+            "models\euromillions"
+        )
+
+        foreach ($path in $paths) {
+            New-Item -ItemType Directory -Force -Path $path | Out-Null
+        }
+    }
+
+    Invoke-Step "Bootstrap done. Launching UI..." {
+        & $venvPython -m streamlit run "ui\streamlit_app.py"
+    }
+}
+catch {
+    Write-Error $_.Exception.Message
+    exit 1
+}

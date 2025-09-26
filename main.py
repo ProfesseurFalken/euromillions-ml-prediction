@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 EuroMillions ML Prediction System - Main Launcher
 ================================================
@@ -24,7 +24,7 @@ def check_dependencies():
         import lightgbm
         import sklearn
         import requests
-        import beautifulsoup4
+        import bs4
         import lxml
         import loguru
         return True
@@ -65,7 +65,7 @@ def open_browser(url, delay=3):
 
 def main():
     """Main entry point."""
-    print("🎰 EuroMillions ML Prediction System")
+    print("EuroMillions ML Prediction System")
     print("=====================================")
     
     # Setup environment
@@ -73,18 +73,19 @@ def main():
     
     # Check dependencies
     if not check_dependencies():
-        print("❌ Missing dependencies. Please install requirements.")
-        input("Press Enter to exit...")
+        print("[ERROR] Missing dependencies. Please install requirements.")
+        if sys.stdin.isatty():
+            input("Press Enter to exit...")
         return
     
-    print("✅ Dependencies check passed")
+    print("[OK] Dependencies check passed")
     
     # Add current directory to Python path for imports
     sys.path.insert(0, str(app_dir))
     
     try:
         # Import and run Streamlit app
-        print("🚀 Starting Streamlit server...")
+        print("Starting Streamlit server...")
         
         # Start browser opener in background
         browser_thread = threading.Thread(
@@ -113,10 +114,11 @@ def main():
         stcli.main()
         
     except KeyboardInterrupt:
-        print("\n🛑 Application stopped by user")
+        print("\nApplication stopped by user")
     except Exception as e:
-        print(f"❌ Error: {e}")
-        input("Press Enter to exit...")
+        print(f"[ERROR] {e}")
+        if sys.stdin.isatty():
+            input("Press Enter to exit...")
 
 if __name__ == "__main__":
     main()

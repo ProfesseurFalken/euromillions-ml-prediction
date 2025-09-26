@@ -512,10 +512,10 @@ class EuromillionsTrainer:
         combined_score = np.mean(ball_probs + star_probs)
         
         return {
-            "balls": selected_balls,
-            "stars": selected_stars,
-            "ball_probabilities": dict(zip(selected_balls, ball_probs)),
-            "star_probabilities": dict(zip(selected_stars, star_probs)),
+            "balls": [int(x) for x in selected_balls],  # Ensure Python int
+            "stars": [int(x) for x in selected_stars],  # Ensure Python int
+            "ball_probabilities": {int(k): float(v) for k, v in zip(selected_balls, ball_probs)},
+            "star_probabilities": {int(k): float(v) for k, v in zip(selected_stars, star_probs)},
             "combined_score": float(combined_score)
         }
     
@@ -538,8 +538,8 @@ class EuromillionsTrainer:
         )
         
         # Convert to ball/star numbers and sort
-        selected_balls = sorted([i + 1 for i in ball_indices])
-        selected_stars = sorted([i + 1 for i in star_indices])
+        selected_balls = sorted([int(i + 1) for i in ball_indices])  # Ensure Python int
+        selected_stars = sorted([int(i + 1) for i in star_indices])  # Ensure Python int
         
         # Get probabilities for selected numbers
         ball_probs_selected = [ball_scores[ball - 1][1] for ball in selected_balls]
@@ -548,10 +548,10 @@ class EuromillionsTrainer:
         combined_score = np.mean(ball_probs_selected + star_probs_selected)
         
         return {
-            "balls": selected_balls,
-            "stars": selected_stars,
-            "ball_probabilities": dict(zip(selected_balls, ball_probs_selected)),
-            "star_probabilities": dict(zip(selected_stars, star_probs_selected)),
+            "balls": [int(x) for x in selected_balls],  # Ensure Python int
+            "stars": [int(x) for x in selected_stars],  # Ensure Python int
+            "ball_probabilities": {int(k): float(v) for k, v in zip(selected_balls, ball_probs_selected)},
+            "star_probabilities": {int(k): float(v) for k, v in zip(selected_stars, star_probs_selected)},
             "combined_score": float(combined_score)
         }
     
@@ -563,24 +563,24 @@ class EuromillionsTrainer:
             "model_info": {
                 "trained_at": self._metadata["trained_at"] if self._metadata else None,
                 "data_range": {
-                    "from": self._metadata["data_from"] if self._metadata else None,
-                    "to": self._metadata["data_to"] if self._metadata else None
+                    "from": str(self._metadata["data_from"]) if self._metadata else None,
+                    "to": str(self._metadata["data_to"]) if self._metadata else None
                 }
             },
             "ball_scores": {
-                f"ball_{ball}": prob for ball, prob in ball_scores
+                f"ball_{int(ball)}": float(prob) for ball, prob in ball_scores
             },
             "star_scores": {
-                f"star_{star}": prob for star, prob in star_scores
+                f"star_{int(star)}": float(prob) for star, prob in star_scores
             },
-            "top_balls": sorted(ball_scores, key=lambda x: x[1], reverse=True)[:10],
-            "top_stars": sorted(star_scores, key=lambda x: x[1], reverse=True)[:5],
+            "top_balls": [[int(ball), float(prob)] for ball, prob in sorted(ball_scores, key=lambda x: x[1], reverse=True)[:10]],
+            "top_stars": [[int(star), float(prob)] for star, prob in sorted(star_scores, key=lambda x: x[1], reverse=True)[:5]],
             "combinations": combinations,
             "statistics": {
-                "ball_score_mean": np.mean([prob for _, prob in ball_scores]),
-                "ball_score_std": np.std([prob for _, prob in ball_scores]),
-                "star_score_mean": np.mean([prob for _, prob in star_scores]),
-                "star_score_std": np.std([prob for _, prob in star_scores]),
+                "ball_score_mean": float(np.mean([prob for _, prob in ball_scores])),
+                "ball_score_std": float(np.std([prob for _, prob in ball_scores])),
+                "star_score_mean": float(np.mean([prob for _, prob in star_scores])),
+                "star_score_std": float(np.std([prob for _, prob in star_scores])),
                 "total_combinations": len(combinations)
             }
         }

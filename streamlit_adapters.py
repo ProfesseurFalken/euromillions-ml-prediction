@@ -17,7 +17,7 @@ from loguru import logger
 
 from config import get_settings
 from repository import get_repository, init_database
-from scraper import EuromillionsScraper
+from hybrid_scraper import get_best_available_draws, scrape_latest_hybrid
 from train_models import EuromillionsTrainer, train_latest, get_model_info
 
 
@@ -32,7 +32,6 @@ class StreamlitAdapters:
         self.settings = get_settings()
         init_database()
         self.repo = get_repository()
-        self.scraper = EuromillionsScraper()
         self.trainer = EuromillionsTrainer()
     
     def init_full_history(self) -> Dict[str, Any]:
@@ -62,7 +61,7 @@ class StreamlitAdapters:
             for page in range(1, max_pages + 1):
                 try:
                     logger.info(f"Crawling page {page}/{max_pages}")
-                    page_draws = self.scraper.scrape_latest(draws_per_page, offset=(page-1)*draws_per_page)
+                    page_draws = scrape_latest_hybrid(limit=draws_per_page, offset=(page-1)*draws_per_page)
                     
                     if not page_draws:
                         logger.info(f"No more draws found at page {page}, stopping")
@@ -144,7 +143,7 @@ class StreamlitAdapters:
             current_df = self.repo.all_draws_df()
             
             # Scrape recent draws (last few pages)
-            recent_draws = self.scraper.scrape_latest(100)  # Get recent 100 draws
+            recent_draws = get_best_available_draws(limit=100)  # Get recent 100 draws
             
             if not recent_draws:
                 return {
@@ -303,11 +302,15 @@ class StreamlitAdapters:
             
             # Convert to DataFrames
             balls_df = pd.DataFrame(ball_scores, columns=['ball', 'probability'])
+            balls_df['ball'] = balls_df['ball'].astype(int)  # Ensure Python int
+            balls_df['probability'] = balls_df['probability'].astype(float)  # Ensure Python float
             balls_df = balls_df.sort_values('probability', ascending=False).reset_index(drop=True)
             balls_df['rank'] = range(1, len(balls_df) + 1)
             balls_df['percentage'] = (balls_df['probability'] * 100).round(2)
             
             stars_df = pd.DataFrame(star_scores, columns=['star', 'probability'])
+            stars_df['star'] = stars_df['star'].astype(int)  # Ensure Python int
+            stars_df['probability'] = stars_df['probability'].astype(float)  # Ensure Python float
             stars_df = stars_df.sort_values('probability', ascending=False).reset_index(drop=True)
             stars_df['rank'] = range(1, len(stars_df) + 1)
             stars_df['percentage'] = (stars_df['probability'] * 100).round(2)
@@ -344,8 +347,9 @@ class StreamlitAdapters:
             tickets = []
             
             for i, combo in enumerate(combinations, 1):
-                balls = sorted(combo[:5])
-                stars = sorted(combo[5:])
+                # Extract just the balls and stars arrays (skip other dict keys)
+                balls = [int(x) for x in combo["balls"]]
+                stars = [int(x) for x in combo["stars"]]
                 
                 ticket = {
                     "ticket_id": i,
@@ -354,7 +358,8 @@ class StreamlitAdapters:
                     "balls_str": " - ".join(f"{b:02d}" for b in balls),
                     "stars_str": " - ".join(f"{s:02d}" for s in stars),
                     "method": method,
-                    "seed": seed
+                    "seed": seed,
+                    "combined_score": float(combo.get("combined_score", 0.0))
                 }
                 
                 tickets.append(ticket)
