@@ -79,3 +79,7 @@ dmypy.json
 # Temporary files
 *.tmp
 *.temp
+
+# Executables (too large for GitHub)
+*.exe
+EuroMillions-ML-v1.0/
